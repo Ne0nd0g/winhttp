@@ -357,7 +357,7 @@ func WinHttpOpen(userAgent string, accessType int, proxy string, proxyBypass str
 		}
 	}
 
-	dwFlags := uint32(flags)
+	dwFlags := flags
 
 	proc := winhttp.NewProc("WinHttpOpen")
 	// WINHTTPAPI HINTERNET WinHttpOpen(
@@ -374,7 +374,7 @@ func WinHttpOpen(userAgent string, accessType int, proxy string, proxyBypass str
 		uintptr(unsafe.Pointer(pszProxyBypassW)),
 		uintptr(dwFlags),
 	)
-	if !errors.Is(err, windows.Errno(windows.ERROR_SUCCESS)) {
+	if !errors.Is(err, windows.ERROR_SUCCESS) {
 		slog.Error("there was an error calling winhttp!WinHttpOpen", "error", err)
 		return 0, fmt.Errorf("winhttp WinHttpOpen(): there was an error calling winhttp!WinHttpOpen: %s", err)
 	}
@@ -414,7 +414,7 @@ func WinHttpConnect(hSession windows.Handle, serverName string, serverPort uint3
 		return 0, fmt.Errorf("winhttp WinHttpConnect(): there was an error converting the server name '%s' to a UTF16 pointer: %s", serverName, err)
 	}
 
-	nServerPort := uint32(serverPort)
+	nServerPort := serverPort
 
 	proc := winhttp.NewProc("WinHttpConnect")
 	// WINHTTPAPI HINTERNET WinHttpConnect(
@@ -430,7 +430,7 @@ func WinHttpConnect(hSession windows.Handle, serverName string, serverPort uint3
 		0,
 	)
 
-	if !errors.Is(err, windows.Errno(windows.ERROR_SUCCESS)) {
+	if !errors.Is(err, windows.ERROR_SUCCESS) {
 		slog.Error("there was an error calling winhttp!WinHttpConnect", "error", err)
 		return 0, fmt.Errorf("there was an error calling winhttp!WinHttpConnect: %s", err)
 	}
@@ -540,7 +540,7 @@ func WinHttpOpenRequest(hConnect windows.Handle, method string, path string, ver
 		ppwszAcceptTypes = []*uint16{nil}
 	}
 
-	dwFlags := uint32(flags)
+	dwFlags := flags
 
 	winhttpopenrequest := winhttp.NewProc("WinHttpOpenRequest")
 	// WINHTTPAPI HINTERNET WinHttpOpenRequest(
@@ -562,7 +562,7 @@ func WinHttpOpenRequest(hConnect windows.Handle, method string, path string, ver
 		uintptr(dwFlags),
 	)
 
-	if !errors.Is(err, windows.Errno(windows.ERROR_SUCCESS)) {
+	if !errors.Is(err, windows.ERROR_SUCCESS) {
 		slog.Error("there was an error calling winhttp!WinHttpOpenRequest", "error", err)
 		return 0, fmt.Errorf("there was an error calling winhttp!WinHttpOpenRequest: %s", err)
 	}
@@ -618,7 +618,7 @@ func WinHttpSendRequest(hRequest windows.Handle, headers string, headersLength u
 		return fmt.Errorf("winhttp WinHttpSendRequest(): there was an error converting the headers '%s' to a UTF16 pointer: %s", headers, err)
 	}
 
-	dwHeadersLength := uint32(headersLength)
+	dwHeadersLength := headersLength
 
 	lpOptional := optionalData
 	dwOptionalLength := optionalDataLen
@@ -645,7 +645,7 @@ func WinHttpSendRequest(hRequest windows.Handle, headers string, headersLength u
 		dwContext,
 	)
 
-	if !errors.Is(err, windows.Errno(windows.ERROR_SUCCESS)) {
+	if !errors.Is(err, windows.ERROR_SUCCESS) {
 		slog.Error("there was an error calling winhttp!WinHttpSendRequest", "error", err)
 		return fmt.Errorf("winhttp there was an error calling winhttp!WinHttpSendRequest: %s", err)
 	}
@@ -675,7 +675,7 @@ func WinHttpReceiveResponse(hRequest windows.Handle) error {
 	//	[in] LPVOID    lpReserved
 	// );
 	r, _, err := proc.Call(uintptr(hRequest), 0)
-	if !errors.Is(err, windows.Errno(windows.ERROR_SUCCESS)) {
+	if !errors.Is(err, windows.ERROR_SUCCESS) {
 		slog.Error("there was an error calling winhttp!WinHttpReceiveResponse", "error", err)
 		return fmt.Errorf("winhttp there was an error calling winhttp!WinHttpReceiveResponse: %s", err)
 	}
@@ -722,7 +722,7 @@ func WinHttpReadData(hRequest windows.Handle, size uint32) ([]byte, error) {
 		uintptr(dwNumberOfBytesToRead),
 		uintptr(unsafe.Pointer(&lpdwNumberOfBytesRead)),
 	)
-	if !errors.Is(err, windows.Errno(windows.ERROR_SUCCESS)) {
+	if !errors.Is(err, windows.ERROR_SUCCESS) {
 		slog.Error("there was an error calling winhttp!WinHttpReadData", "error", err)
 		return []byte{}, fmt.Errorf("there was an error calling winhttp!WinHttpReadData: %s", err)
 	}
@@ -759,7 +759,7 @@ func WinHttpQueryDataAvailable(hRequest windows.Handle) (uint32, error) {
 		uintptr(hRequest),
 		uintptr(unsafe.Pointer(&lpdwNumberOfBytesAvailable)),
 	)
-	if !errors.Is(err, windows.Errno(windows.ERROR_SUCCESS)) {
+	if !errors.Is(err, windows.ERROR_SUCCESS) {
 		slog.Error("there was an error calling winhttp!WinHttpQueryDataAvailable", "error", err)
 		return lpdwNumberOfBytesAvailable, fmt.Errorf("there was an error calling winhttp!WinHttpQueryDataAvailable: %s", err)
 	}
@@ -838,7 +838,7 @@ func WinHttpQueryHeaders(hRequest windows.Handle, infoLevel uint32, header strin
 		uintptr(unsafe.Pointer(&index)),
 	)
 	// First run returns ERROR_INSUFFICIENT_BUFFER and lpdwBufferLength contains the number of bytes required to hold the requested information.
-	if !errors.Is(err, windows.Errno(windows.ERROR_INSUFFICIENT_BUFFER)) {
+	if !errors.Is(err, windows.ERROR_INSUFFICIENT_BUFFER) {
 		slog.Error("there was an error calling winhttp!WinHttpQueryHeaders with WINHTTP_NO_OUTPUT_BUFFER to determine the data size", "error", err)
 		return lpBuffer, fmt.Errorf("winhttp there was an error calling winhttp!WinHttpQueryHeaders 1: %s", err)
 	}
@@ -860,7 +860,7 @@ func WinHttpQueryHeaders(hRequest windows.Handle, infoLevel uint32, header strin
 		uintptr(unsafe.Pointer(&lpdwBufferLength)),
 		uintptr(unsafe.Pointer(&index)),
 	)
-	if !errors.Is(err, windows.Errno(windows.ERROR_SUCCESS)) {
+	if !errors.Is(err, windows.ERROR_SUCCESS) {
 		slog.Error("there was an error calling winHttpQueryHeaders to receive the data", "error", err)
 		return lpBuffer, fmt.Errorf("winhttp there was an error calling winhttp!WinHttpQueryHeaders 2: %s", err)
 	}
@@ -883,7 +883,7 @@ func WinHttpCloseHandle(hInternet windows.Handle) {
 	//	[in] HINTERNET hInternet
 	// );
 	r, _, err := proc.Call(uintptr(hInternet))
-	if !errors.Is(err, windows.Errno(windows.ERROR_SUCCESS)) {
+	if !errors.Is(err, windows.ERROR_SUCCESS) {
 		slog.Error("there was an error calling winhttp!WinHttpCloseHandle", "error", err)
 		return
 	}
@@ -928,7 +928,7 @@ func WinHttpSetOption(hInternet windows.Handle, option uint32, buffer []byte) er
 		uintptr(unsafe.Pointer(&lpBuffer[0])),
 		uintptr(dwBufferLength),
 	)
-	if !errors.Is(err, windows.Errno(windows.ERROR_SUCCESS)) {
+	if !errors.Is(err, windows.ERROR_SUCCESS) {
 		slog.Error("there was an error calling winhttp!WinHttpSetOption", "option", option, "buffer", fmt.Sprintf("0x%X", buffer), "error", err)
 		return fmt.Errorf("winhttp there was an error calling winhttp!WinHttpSetOption: %s", err)
 	}
@@ -986,7 +986,7 @@ func WinHttpAddRequestHeaders(hRequest windows.Handle, headers string, modifiers
 		uintptr(dwHeadersLength),
 		uintptr(dwModifiers),
 	)
-	if !errors.Is(err, windows.Errno(windows.ERROR_SUCCESS)) {
+	if !errors.Is(err, windows.ERROR_SUCCESS) {
 		slog.Error("there was an error calling winhttp!WinHttpAddRequestHeaders", "headers", headers, "modifiers", fmt.Sprintf("%08b", modifiers), "error", err)
 		return fmt.Errorf("winhttp there was an error calling winhttp!WinHttpAddRequestHeaders: %s", err)
 	}

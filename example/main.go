@@ -61,7 +61,7 @@ func main() {
 	}
 	transport := http.Transport{
 		TLSClientConfig:        &tlsConfig,
-		TLSHandshakeTimeout:    time.Duration(240 * time.Second),
+		TLSHandshakeTimeout:    240 * time.Second,
 		MaxResponseHeaderBytes: 0,
 	}
 	client.Transport = &transport

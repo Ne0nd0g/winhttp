@@ -352,7 +352,7 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	}
 
 	// Loop over available data until completed
-	body := []byte{}
+	var body []byte
 	var i int
 	for {
 		// Do not use the return value of WinHttpQueryDataAvailable to determine whether the end of a response has been reached,
@@ -360,26 +360,28 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 		// WinHttpQueryDataAvailable to anticipate more data.
 
 		// Get the size of the HTTP Response
-		n, err := WinHttpQueryDataAvailable(hRequest)
+		var n uint32
+		n, err = WinHttpQueryDataAvailable(hRequest)
 		if err != nil {
 			return nil, err
 		}
 		slog.Debug("called WinHttpQueryDataAvailable", "data size", n, "loop count", i)
 
 		// Read the HTTP Response data
-		data, err := WinHttpReadData(hRequest, n)
+		var respData []byte
+		respData, err = WinHttpReadData(hRequest, n)
 		if err != nil {
 			return nil, err
 		}
-		slog.Debug("called WinHttpReadData", "data length", len(data), "data", string(data), "loop count", i)
+		slog.Debug("called WinHttpReadData", "data length", len(respData), "data", string(respData), "loop count", i)
 
 		// When there is no more data, exit the loop
-		if len(data) <= 0 {
+		if len(respData) <= 0 {
 			break
 		}
 
-		// Add the data chunk to response body
-		body = append(body, data...)
+		// Add the data chunk to the response body
+		body = append(body, respData...)
 		i++
 	}
 
@@ -422,7 +424,7 @@ func (c *Client) Head(url string) (resp *http.Response, err error) {
 
 // Post issues an HTTP POST request to specified URL and returns an HTTP response
 func (c *Client) Post(url, contentType string, body io.Reader) (resp *http.Response, err error) {
-	slog.Debug("entering into *Client.Post function", "url", url, "contentType", contentType, "body", fmt.Sprintf("%T: %+v", body))
+	slog.Debug("entering into *Client.Post function", "url", url, "contentType", contentType, "body", fmt.Sprintf("%T: %+v", body, body))
 	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
 		return nil, err
