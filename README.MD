@@ -1,3 +1,9 @@
+[![CodeQL](https://github.com/Ne0nd0g/winhttp/actions/workflows/codeql.yml/badge.svg)](https://github.com/Ne0nd0g/winhttp/actions/workflows/codeql.yml)
+[![GoReportCard](https://goreportcard.com/badge/github.com/Ne0nd0g/winhttp)](https://goreportcard.com/report/github.com/Ne0nd0g/winhttp)
+[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![Release](https://img.shields.io/github/release/Ne0nd0g/winhttp.svg)](https://github.com/Ne0nd0g/winhttp/releases/latest)
+[![GoDoc](https://godoc.org/github.com/Ne0nd0g/winhttp?status.svg)](https://pkg.go.dev/github.com/Ne0nd0g/winhttp)
+
 # winhttp
 
 `winhttp` is a library used to interact with the Windows [winhttp](https://learn.microsoft.com/en-us/windows/win32/winhttp/about-winhttp) API.
@@ -14,7 +20,7 @@ All loggings calls in this package are only for the `DEBUG` logging level which 
 
 ## Example
 
-There is an example implementation in the [examples](./examples/) directory.
+There is an example implementation in the [example](./example) directory.
 Run the example code with:
 
 ```text
