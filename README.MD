@@ -16,7 +16,7 @@ This package's custom client also takes an [http.Transport](https://pkg.go.dev/n
 
 This package uses the [log/slog](https://pkg.go.dev/log/slog) package for logging. 
 To retrieve the log output, create a new logger and call the [slog.SetDefault()](https://pkg.go.dev/log/slog#SetDefault) function.
-All loggings calls in this package are only for the `DEBUG` logging level which are not output by default.
+All logging calls in this package are only for the `DEBUG` logging level which are not output by default.
 
 ## Example
 
