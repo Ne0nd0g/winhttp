@@ -138,7 +138,12 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	defer WinHttpCloseHandle(hConnect)
 
 	// Set HTTP Access Types
-	accessTypes := WINHTTP_DEFAULT_ACCEPT_TYPES
+	accessTypes := []string{WINHTTP_DEFAULT_ACCEPT_TYPES}
+	//accessTypes := []string{"text/html", "application/octet-stream", "application/xhtml+xml", "", "application/xml;q=0.9", "image/webp", "*/*;q=0.8"}
+	_, OK := req.Header["Accept"]
+	if OK {
+		accessTypes = req.Header["Accept"]
+	}
 
 	// Set HTTP Request Flags
 	reqFlags := WINHTTP_FLAG_NONE
@@ -202,7 +207,7 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	}
 
 	// See if the response header timeout value has been set
-	// Winidows winhttp default timeout is 90 seconds
+	// Windows winhttp default timeout is 90 seconds
 	if transport.ResponseHeaderTimeout.Milliseconds() > 0 {
 		buffer := make([]byte, 4)
 		binary.LittleEndian.PutUint32(buffer, uint32(transport.ResponseHeaderTimeout.Milliseconds()))
@@ -223,6 +228,22 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 			return nil, err
 		}
 		slog.Debug("set winhttp option", "option", "WINHTTP_OPTION_MAX_RESPONSE_HEADER_SIZE", "time", uint32(transport.MaxResponseHeaderBytes))
+	}
+
+	// See if the request has any headers to be added
+	if len(req.Header) > 0 {
+		var headers string
+		for k, v := range req.Header {
+			// Each header except the last must be terminated by a carriage return/line feed (CR/LF)
+			headers += fmt.Sprintf("%s: %s", k, strings.Join(v, ", "))
+			headers = strings.TrimSuffix(headers, ", ")
+			headers += "\r\n"
+		}
+		headers = strings.TrimSuffix(headers, "\r\n")
+		err = WinHttpAddRequestHeaders(hRequest, headers, WINHTTP_ADDREQ_FLAG_ADD)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// See if there is any data to send

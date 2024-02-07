@@ -265,6 +265,13 @@ const (
 	WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_2 = 0x00000800
 	WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_3 = 0x00002000
 	WINHTTP_FLAG_SECURE_PROTOCOL_ALL    = WINHTTP_FLAG_SECURE_PROTOCOL_SSL2 | WINHTTP_FLAG_SECURE_PROTOCOL_SSL3 | WINHTTP_FLAG_SECURE_PROTOCOL_TLS1
+
+	WINHTTP_ADDREQ_FLAG_ADD_IF_NEW              = 0x10000000
+	WINHTTP_ADDREQ_FLAG_ADD                     = 0x20000000
+	WINHTTP_ADDREQ_FLAG_COALESCE_WITH_COMMA     = 0x40000000
+	WINHTTP_ADDREQ_FLAG_COALESCE_WITH_SEMICOLON = 0x01000000
+	WINHTTP_ADDREQ_FLAG_COALESCE                = WINHTTP_ADDREQ_FLAG_COALESCE_WITH_COMMA
+	WINHTTP_ADDREQ_FLAG_REPLACE                 = 0x80000000
 )
 
 var winhttp = windows.NewLazySystemDLL("winhttp.dll")
@@ -469,8 +476,8 @@ func WinHttpConnect(hSession windows.Handle, serverName string, serverPort uint3
 //	WINHTTP_FLAG_REFRESH - Indicates that the request should be forwarded to the originating server rather than sending a cached version of a resource from a proxy server.
 //		 When this flag is used, a "Pragma: no-cache" header is added to the request handle. When creating an HTTP/1.1 request header, a "Cache-Control: no-cache" is also added.
 //	WINHTTP_FLAG_SECURE - Uses secure transaction semantics. This translates to using Secure Sockets Layer (SSL)/Transport Layer Security (TLS).
-func WinHttpOpenRequest(hConnect windows.Handle, method string, path string, version string, referrer string, accessTypes string, flags uint32) (windows.Handle, error) {
-	slog.Debug("entering into WinHttpOpenRequest function", "hConnect", hConnect, "method", method, "path", path, "version", version, "flags", flags)
+func WinHttpOpenRequest(hConnect windows.Handle, method string, path string, version string, referrer string, accessTypes []string, flags uint32) (windows.Handle, error) {
+	slog.Debug("entering into WinHttpOpenRequest function", "hConnect", hConnect, "method", method, "path", path, "version", version, "referrer", referrer, "accessTypes", accessTypes, "flags", flags)
 
 	// Convert HTTP method to LPCWSTR
 	pwszVerb, err := windows.UTF16PtrFromString(strings.ToUpper(method))
@@ -507,10 +514,30 @@ func WinHttpOpenRequest(hConnect windows.Handle, method string, path string, ver
 	}
 
 	// convert acceptTypes to LPCWSTR
-	ppwszAcceptTypes, err := windows.UTF16PtrFromString(accessTypes)
-	if err != nil {
-		slog.Error("there was an error converting acceptTypes to a UTF16 pointer", "acceptTypes", accessTypes, "error", err)
-		return 0, fmt.Errorf("winhttp WinHttpOpenRequest(): there was an error converting the acceptTypes '%s' to a UTF16 pointer: %s", accessTypes, err)
+	// Pointer to a null-terminated array of string pointers that specifies media types accepted by the client
+	var ppwszAcceptTypes []*uint16
+	if len(accessTypes) > 0 {
+		for i, acceptType := range accessTypes {
+			var pwszAcceptType *uint16
+			// An empty string will cause the Accept header to be added to the request with no value
+			if acceptType == "" {
+				if i == 0 {
+					ppwszAcceptTypes = []*uint16{nil}
+					continue
+				}
+				// Adding an empty string to the array causes it to be null-terminated in that spot
+				// and the rest of the array is ignored. So we just break out of the loop here.
+				continue
+			}
+			pwszAcceptType, err = windows.UTF16PtrFromString(acceptType)
+			if err != nil {
+				slog.Error("there was an error converting acceptType to a UTF16 pointer", "acceptType", acceptType, "error", err)
+				return 0, fmt.Errorf("winhttp WinHttpOpenRequest(): there was an error converting the acceptType '%s' to a UTF16 pointer: %s", acceptType, err)
+			}
+			ppwszAcceptTypes = append(ppwszAcceptTypes, pwszAcceptType)
+		}
+	} else {
+		ppwszAcceptTypes = []*uint16{nil}
 	}
 
 	dwFlags := uint32(flags)
@@ -531,7 +558,7 @@ func WinHttpOpenRequest(hConnect windows.Handle, method string, path string, ver
 		uintptr(unsafe.Pointer(pwszObjectName)),
 		uintptr(unsafe.Pointer(pwszVersion)),
 		uintptr(unsafe.Pointer(pwszReferrer)),
-		uintptr(unsafe.Pointer(&ppwszAcceptTypes)),
+		uintptr(unsafe.Pointer(&ppwszAcceptTypes[0])),
 		uintptr(dwFlags),
 	)
 
@@ -908,6 +935,64 @@ func WinHttpSetOption(hInternet windows.Handle, option uint32, buffer []byte) er
 	// Returns TRUE if the handle is successfully closed, otherwise FALSE
 	if r == 0 {
 		return fmt.Errorf("the winhttp!WinHttpSetOption function returned 0")
+	}
+	return nil
+}
+
+// WinHttpAddRequestHeaders adds one or more HTTP request headers to the HTTP request handle.
+//
+// https://learn.microsoft.com/en-us/windows/win32/api/winhttp/nf-winhttp-winhttpaddrequestheaders
+//
+// hRequest is a valid HINTERNET request handle returned by WinHttpOpenRequest.
+//
+// headers a string that contains the headers to add to the request.
+// Each header except the last must be terminated by a carriage return/line feed (CR/LF).
+//
+// modifiers the flags used to modify the semantics of this function.
+// Can be one or more of the following flags:
+// WINHTTP_ADDREQ_FLAG_ADD - Adds the header if it does not exist. Used with WINHTTP_ADDREQ_FLAG_REPLACE.
+// WINHTTP_ADDREQ_FLAG_ADD_IF_NEW - Adds the header only if it does not already exist; otherwise, an error is returned.
+// WINHTTP_ADDREQ_FLAG_COALESCE - Merges headers of the same name.
+// WINHTTP_ADDREQ_FLAG_COALESCE_WITH_COMMA - Merges headers of the same name using a comma. For example, adding "Accept: text/*" followed by "Accept: audio/*" with this flag results in a single header "Accept: text/*, audio/*". This causes the first header found to be merged. The calling application must to ensure a cohesive scheme with respect to merged and separate headers.
+// WINHTTP_ADDREQ_FLAG_COALESCE_WITH_SEMICOLON - Merges headers of the same name using a semicolon.
+// WINHTTP_ADDREQ_FLAG_REPLACE - Replaces or removes a header. If the header value is empty and the header is found, it is removed. If the value is not empty, it is replaced.
+func WinHttpAddRequestHeaders(hRequest windows.Handle, headers string, modifiers uint32) error {
+	slog.Debug("entering into WinHttpAddRequestHeaders function", "hRequest", hRequest, "headers", headers, "modifiers", fmt.Sprintf("%08b", modifiers))
+
+	var lpszHeaders *uint16
+	var err error
+	// Convert the headers string to a UTF16 pointer
+	if headers != "" {
+		lpszHeaders, err = windows.UTF16PtrFromString(headers)
+		if err != nil {
+			slog.Error("there was an error converting the header string to a UTF16 pointer", "headers", headers, "error", err)
+			return fmt.Errorf("WinHttpAddRequestHeaders there was an error converting '%s' to a LPCWSTR: %s", headers, err)
+		}
+	}
+
+	dwHeadersLength := uint32(len(headers))
+	dwModifiers := modifiers
+
+	proc := winhttp.NewProc("WinHttpAddRequestHeaders")
+	// WINHTTPAPI BOOL WinHttpAddRequestHeaders(
+	//  [in] HINTERNET hRequest,
+	//  [in] LPCWSTR   lpszHeaders,
+	//  [in] DWORD     dwHeadersLength,
+	//  [in] DWORD     dwModifiers
+	// );
+	r, _, err := proc.Call(
+		uintptr(hRequest),
+		uintptr(unsafe.Pointer(lpszHeaders)),
+		uintptr(dwHeadersLength),
+		uintptr(dwModifiers),
+	)
+	if !errors.Is(err, windows.Errno(windows.ERROR_SUCCESS)) {
+		slog.Error("there was an error calling winhttp!WinHttpAddRequestHeaders", "headers", headers, "modifiers", fmt.Sprintf("%08b", modifiers), "error", err)
+		return fmt.Errorf("winhttp there was an error calling winhttp!WinHttpAddRequestHeaders: %s", err)
+	}
+	// Returns TRUE if the handle is successfully closed, otherwise FALSE
+	if r == 0 {
+		return fmt.Errorf("the winhttp!WinHttpAddRequestHeaders function returned 0")
 	}
 	return nil
 }
