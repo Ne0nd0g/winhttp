@@ -37,6 +37,10 @@ jobs:
           go-version: '1.21'
           check-latest: true
 
+      - name: 'Set GOOS'
+        id: goos
+        run: 'export GOOS=windows'
+
       - name: GoVulnCheck
         id: govulncheck
         uses: golang/govulncheck-action@v1
