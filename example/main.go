@@ -91,5 +91,5 @@ func main() {
 			fmt.Printf("[+] HTTP Data:\n%s\n", body)
 		}
 	}
-	slog.Info("program finished running successfully")
+	slog.Info("program finished running successfully and is exiting...")
 }
