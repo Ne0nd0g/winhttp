@@ -72,7 +72,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	slog.Info("recieved HTTP response", "response", resp)
+	slog.Info("received HTTP response", "response", resp)
 
 	n := int64(0)
 	body := new(strings.Builder)
@@ -89,5 +89,5 @@ func main() {
 			fmt.Printf("[+] HTTP Data:\n%s\n", body)
 		}
 	}
-	slog.Info("program finished running succesfully")
+	slog.Info("program finished running successfully")
 }

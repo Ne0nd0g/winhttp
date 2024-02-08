@@ -52,9 +52,11 @@ func NewHTTPClient() (*Client, error) {
 	return &client, nil
 }
 
-// Do sends an HTTP request and returns an HTTP response using the Windows winhttp API
-// The high-level API call flow to send data is WinHttpOpen -> WinHttpConnect -> WinHttpOpenRequest -> WinHttpSendRequest
-// The high-level API call flow to receive data is WinHttpReceiveResponse -> WinHttpQueryDataAvailable -> WinHttpReadData
+// Do send an HTTP request and returns an HTTP response using the Windows winhttp API.
+// The high-level API call flow to send data is:
+// WinHttpOpen -> WinHttpConnect -> WinHttpOpenRequest -> WinHttpSendRequest.
+// The high-level API call flow to receive data is:
+// WinHttpReceiveResponse -> WinHttpQueryDataAvailable -> WinHttpReadData.
 func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	slog.Debug("entering into *Client.Do function", "http.Request", fmt.Sprintf("%+v", req))
 	resp := http.Response{}
@@ -78,7 +80,7 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 
 	// Apply TLS configurations if any
 	if transport.TLSClientConfig != nil {
-		// Check to see if TLS minumum or maximum version was set
+		// Check to see if a TLS minimum or maximum version was set
 		vTLS := 0x00000000
 		// Check to see if the TLS minimum version is set
 		if transport.TLSClientConfig.MinVersion > 0 {
@@ -436,7 +438,7 @@ func (c *Client) Post(url, contentType string, body io.Reader) (resp *http.Respo
 		return nil, err
 	}
 
-	// Setup the content-type
+	// Set up the content-type
 	req.Header.Set("Content-Type", contentType)
 
 	return c.Do(req)
