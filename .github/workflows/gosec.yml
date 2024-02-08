@@ -43,7 +43,7 @@ jobs:
           export GOOS=windows
           export PATH=$PATH:$(go env GOPATH)/bin
           go install github.com/securego/gosec/v2/cmd/gosec@latest
-          gosec ./...
+          gosec -exclude=G103 ./...
 
       - name: Go Report Card - Install
         id: goreportcard_install

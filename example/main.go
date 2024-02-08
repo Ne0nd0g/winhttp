@@ -56,7 +56,7 @@ func main() {
 
 	// Build TLS Client Config and add it to the client
 	tlsConfig := tls.Config{
-		InsecureSkipVerify: true,
+		InsecureSkipVerify: true, // #nosec G402 - InsecureSkipVerify is set to true on purpose
 		NextProtos:         []string{},
 		MinVersion:         tls.VersionTLS10,
 		MaxVersion:         tls.VersionTLS13,
@@ -91,5 +91,5 @@ func main() {
 			fmt.Printf("[+] HTTP Data:\n%s\n", body)
 		}
 	}
-	slog.Info("program finished running successfully and is now exiting...")
+	slog.Info("program finished running successfully")
 }
