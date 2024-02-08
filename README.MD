@@ -1,4 +1,3 @@
-[![CodeQL](https://github.com/Ne0nd0g/winhttp/actions/workflows/codeql.yml/badge.svg)](https://github.com/Ne0nd0g/winhttp/actions/workflows/codeql.yml)
 [![GoReportCard](https://goreportcard.com/badge/github.com/Ne0nd0g/winhttp)](https://goreportcard.com/report/github.com/Ne0nd0g/winhttp)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Release](https://img.shields.io/github/release/Ne0nd0g/winhttp.svg)](https://github.com/Ne0nd0g/winhttp/releases/latest)
