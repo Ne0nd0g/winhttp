@@ -40,3 +40,16 @@ jobs:
       - name: Gosec Security Scanner
         id: gosec
         uses: securego/gosec@master
+
+      - name: Go Report Card - Install
+        id: goreportcard_install
+        working-directory: /tmp
+        run: |
+          git clone https://github.com/gojp/goreportcard.git
+          cd goreportcard
+          make install
+          go install ./cmd/goreportcard-cli
+
+      - name: Go Report Card - Run
+        id: goreportcard_run
+        run: 'goreportcard-cli -v' # This renames the files in the ./rpc directory to *.grc.bak causing builds to fail

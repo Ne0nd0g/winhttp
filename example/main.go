@@ -3,6 +3,7 @@
 package main
 
 import (
+	// Standard
 	"bytes"
 	"crypto/tls"
 	"flag"
@@ -15,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	// Internal
 	"github.com/Ne0nd0g/winhttp"
 )
 
