@@ -125,13 +125,19 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	} else {
 		port, err = strconv.Atoi(req.URL.Port())
 		if err != nil {
-			return nil, fmt.Errorf("http/winhttp/winhttp_windows.go/Do(): there was an error converting '%s' to an integer: %s", req.URL.Port(), err)
+			return nil, fmt.Errorf("winhttp there was an error converting '%s' to an integer: %s", req.URL.Port(), err)
 		}
+	}
+
+	// Determine the request server name and remove the port if it exists
+	serverName := req.URL.Hostname()
+	if strings.Contains(serverName, ":") {
+		serverName = strings.Split(serverName, ":")[0]
 	}
 
 	// Create the Windows HTTP connection to the target
 	var hConnect windows.Handle
-	hConnect, err = WinHttpConnect(hSession, req.Host, uint32(port))
+	hConnect, err = WinHttpConnect(hSession, serverName, uint32(port))
 	if err != nil {
 		return nil, err
 	}
@@ -315,14 +321,14 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	}
 	slog.Debug("retrieved HTTP version", "version", resp.Proto)
 
-	// Parse the HTTP Protocol Major e.g. 1 in HTTP/1.1
+	// Parse the HTTP Protocol Major e.g., 1 in HTTP/1.1
 	index := strings.Index(resp.Proto, ".")
 	resp.ProtoMajor, err = strconv.Atoi(resp.Proto[index-1 : index])
 	if err != nil {
 		return nil, fmt.Errorf("there was an error converting '%s' to an integer: %s", resp.Proto[index-1:index], err)
 	}
 
-	// Parse the HTTP Protocol Minor e.g. 0 in HTTP/1.0
+	// Parse the HTTP Protocol Minor e.g., 0 in HTTP/1.0
 	resp.ProtoMinor, err = strconv.Atoi(resp.Proto[index+1 : index+2])
 	if err != nil {
 		return nil, fmt.Errorf("there was an error converting '%s' to an integer: %s", resp.Proto[index+1:index+2], err)
