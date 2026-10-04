@@ -1,0 +1,5 @@
+# golangci-lint v2 configuration.
+# Shared Merlin template: v2 defaults (errcheck, govet, ineffassign, staticcheck,
+# unused) plus the lax generated-file exclusion. No repo-specific exclusions are
+# needed; this module lints clean for the Windows build.
+version: "2"

@@ -1,0 +1,73 @@
+name: "CodeQL"
+
+on:
+  push:
+    branches: [ "dev", "main" ]
+    paths-ignore:
+      - '.github/**'
+      - 'docs/**'
+      - '.gitattributes'
+      - '.gitignore'
+      - 'LICENSE'
+      - 'README.MD'
+  pull_request:
+    branches: [ "dev", "main" ]
+    paths-ignore:
+      - '.github/**'
+      - 'docs/**'
+      - '.gitattributes'
+      - '.gitignore'
+      - 'LICENSE'
+      - 'README.MD'
+  schedule:
+    - cron: '27 6 * * 3'
+  workflow_dispatch:
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'go' ]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      # Set up Go BEFORE codeql-action/init. In manual build-mode CodeQL's Go
+      # extractor wraps the `go` on PATH with a tracing shim at init time; if setup-go
+      # ran after init it would prepend its own Go and shadow that shim, so the build
+      # runs untraced and CodeQL sees no code ("didn't build any of it").
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          check-latest: true
+
+      # build-mode: manual. CodeQL's Go extractor does not support build-mode: none,
+      # and this is a Windows-only package (//go:build windows) so autobuild on Linux
+      # would compile nothing. We cross-compile for Windows (GOOS=windows) between init
+      # and analyze so the tracer extracts the build-tagged sources.
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: manual
+
+      - name: Build (manual build-mode, Windows target, traced by CodeQL)
+        env:
+          GOOS: windows
+        run: go build ./...
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:${{ matrix.language }}"

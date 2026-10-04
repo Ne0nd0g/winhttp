@@ -266,10 +266,11 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 		optionalData = uintptr(unsafe.Pointer(&reqBody[0]))
 	}
 
-	context := unsafe.Pointer(uintptr(0))
+	// No application-defined context value is associated with the request.
+	var context uintptr
 
 	// Send the HTTP Request
-	err = WinHttpSendRequest(hRequest, WINHTTP_NO_ADDITIONAL_HEADERS, 0, optionalData, uint32(optionalDataLength), uint32(optionalDataLength), uintptr(context))
+	err = WinHttpSendRequest(hRequest, WINHTTP_NO_ADDITIONAL_HEADERS, 0, optionalData, uint32(optionalDataLength), uint32(optionalDataLength), context)
 	if err != nil {
 		return nil, err
 	}
